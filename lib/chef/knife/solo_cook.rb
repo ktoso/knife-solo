@@ -264,10 +264,16 @@ class Chef
         if config[:ssh_gateway]
           ssh_command = "ssh -TA #{config[:ssh_gateway]} ssh -T -o StrictHostKeyChecking=no #{ssh_args}"
         else
-          ssh_command = "ssh #{ssh_args}"
+          parts = ssh_args.split(' ')
+          if parts.empty?
+            ssh_command = "ssh #{ssh_args}"
+          else
+            ssh_target = parts.first
+            ssh_command = "ssh #{ssh_args}".sub(ssh_target, "'#{ssh_target}'").split("-o").first
+          end
         end
 
-        cmd = ['rsync', '-rL', rsync_debug, rsync_permissions, %Q{--rsh=#{ssh_command}}]
+        cmd = ['rsync', '-rL', rsync_debug, rsync_permissions, "--rsh=#{ssh_command}"]
         cmd += extra_opts
         cmd += rsync_excludes.map { |ignore| "--exclude=#{ignore}" }
         cmd += [ adjust_rsync_path_on_client(source_path),
